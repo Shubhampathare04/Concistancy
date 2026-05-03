@@ -20,9 +20,10 @@ A **mobile-first behavior system** with streaks, XP, levels, AI suggestions, off
 | State | Zustand + TanStack React Query |
 | Navigation | React Navigation v7 (Stack + Bottom Tabs) |
 | Backend | FastAPI + Python 3.9 |
-| Database | MySQL 8.0 (via Docker) |
+| Database | MySQL 8.0 (via Docker) + MongoDB Atlas |
 | Cache | Redis 7 (via Docker) |
 | ORM | SQLAlchemy 2.0 |
+| MongoDB Driver | Motor (async) + PyMongo |
 | Auth | JWT (python-jose + passlib/bcrypt) |
 | Offline DB | Expo SQLite v16 |
 
@@ -97,13 +98,24 @@ cp .env.example .env
 Edit `.env`:
 ```
 DATABASE_URL=mysql+pymysql://root:password@localhost:3306/consistency_db
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/consistency_app?retryWrites=true&w=majority
 JWT_SECRET=your_secret_key_here
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=10080
 REDIS_URL=redis://localhost:6379/0
 ```
 
-### 5. Start the Server
+### 5. Initialize MongoDB (optional)
+
+```bash
+python init_mongodb.py
+```
+
+This creates collections: users, tasks, habits, completions, stats, streaks, notifications, sync_queue
+
+> See [MONGODB_SETUP.md](backend/MONGODB_SETUP.md) for detailed MongoDB documentation
+
+### 6. Start the Server
 
 ```bash
 uvicorn app.main:app --reload --port 8000 --host 0.0.0.0
@@ -112,8 +124,9 @@ uvicorn app.main:app --reload --port 8000 --host 0.0.0.0
 - API: http://localhost:8000
 - Swagger Docs: http://localhost:8000/docs
 - Health Check: http://localhost:8000/health
+- Detailed Health: http://localhost:8000/health/detailed (MySQL, Redis, MongoDB status)
 
-### 6. Seed Test Users (optional)
+### 7. Seed Test Users (optional)
 
 ```bash
 python seed_users.py

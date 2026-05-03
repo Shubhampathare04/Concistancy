@@ -1,4 +1,5 @@
-import { View, TextInput, Text, StyleSheet, TextInputProps } from 'react-native';
+import { useRef, useCallback, useState } from 'react';
+import { View, TextInput, Text, StyleSheet, TextInputProps, Animated } from 'react-native';
 import { useTheme } from '@/store/ThemeContext';
 import { radius, font, spacing } from '@/constants/theme';
 
@@ -9,32 +10,131 @@ interface Props extends TextInputProps {
   rightIcon?: React.ReactNode;
 }
 
-export default function Input({ label, error, leftIcon, rightIcon, style, ...props }: Props) {
+export default function Input({ label, error, leftIcon, rightIcon, style, onFocus, onBlur, value, ...props }: Props) {
   const { colors } = useTheme();
+  const focusAnim  = useRef(new Animated.Value(0)).current;
+  const shakeAnim  = useRef(new Animated.Value(0)).current;
+  const [isFocused, setIsFocused] = useState(false);
+
+  const handleFocus = useCallback((e: any) => {
+    setIsFocused(true);
+    Animated.timing(focusAnim, { toValue: 1, duration: 180, useNativeDriver: false }).start();
+    onFocus?.(e);
+  }, [onFocus]);
+
+  const handleBlur = useCallback((e: any) => {
+    setIsFocused(false);
+    Animated.timing(focusAnim, { toValue: 0, duration: 180, useNativeDriver: false }).start();
+    onBlur?.(e);
+  }, [onBlur]);
+
+  // Shake on error
+  const prevError = useRef('');
+  if (error && error !== prevError.current) {
+    prevError.current = error;
+    Animated.sequence([
+      Animated.timing(shakeAnim, { toValue: 6,  duration: 60, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -6, duration: 60, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 4,  duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -4, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 0,  duration: 40, useNativeDriver: true }),
+    ]).start();
+  }
+
+  const borderColor = focusAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [error ? colors.red : colors.border, error ? colors.red : colors.primary],
+  });
+
+  const shadowOpacity = focusAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 0.3],
+  });
+
+  const hasValue = value !== undefined ? value.length > 0 : false;
+  const labelFloat = isFocused || hasValue;
+
   return (
     <View style={s.wrapper}>
-      {label && <Text style={[s.label, { color: colors.textMuted }]}>{label}</Text>}
-      <View style={[s.row, { backgroundColor: colors.card, borderColor: error ? colors.red : colors.border }]}>
-        {leftIcon && <View style={s.iconLeft}>{leftIcon}</View>}
-        <TextInput
-          style={[s.input, { color: colors.text, flex: 1 }, style]}
-          placeholderTextColor={colors.textDim}
-          selectionColor={colors.primary}
-          {...props}
-        />
-        {rightIcon && <View style={s.iconRight}>{rightIcon}</View>}
-      </View>
-      {error && <Text style={[s.error, { color: colors.red }]}>{error}</Text>}
+      <Animated.View style={[
+        s.container,
+        {
+          backgroundColor: colors.card,
+          borderColor,
+          shadowColor: error ? colors.red : colors.primary,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity,
+          shadowRadius: 10,
+          elevation: 0,
+          transform: [{ translateX: shakeAnim }],
+        },
+      ]}>
+        {leftIcon && (
+          <View style={s.iconLeft}>{leftIcon}</View>
+        )}
+        <View style={s.inputWrap}>
+          {label && (
+            <Text style={[
+              s.floatLabel,
+              {
+                color: labelFloat
+                  ? (error ? colors.red : isFocused ? colors.primary : colors.textMuted)
+                  : colors.textMuted,
+                fontSize: labelFloat ? font.xs : font.md,
+                top: labelFloat ? 8 : 18,
+              },
+            ]}>
+              {label}
+            </Text>
+          )}
+          <TextInput
+            style={[
+              s.input,
+              { color: colors.text, paddingTop: label ? 22 : 0 },
+              style,
+            ]}
+            placeholderTextColor={label ? 'transparent' : colors.textMuted}
+            selectionColor={colors.primary}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            value={value}
+            {...props}
+          />
+        </View>
+        {rightIcon && (
+          <View style={s.iconRight}>{rightIcon}</View>
+        )}
+      </Animated.View>
+      {error ? (
+        <Text style={[s.errorTxt, { color: colors.red }]}>{error}</Text>
+      ) : null}
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  wrapper: { marginBottom: 14 },
-  label: { fontSize: font.sm, marginBottom: 6, fontWeight: '600' },
-  row: { flexDirection: 'row', alignItems: 'center', borderRadius: radius.md, borderWidth: 1, paddingHorizontal: spacing.md },
-  input: { paddingVertical: 14, fontSize: font.md },
-  iconLeft: { marginRight: spacing.sm },
+  wrapper:    { marginBottom: 16 },
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: radius.lg,
+    borderWidth: 1.5,
+    paddingHorizontal: spacing.md,
+    minHeight: 58,
+  },
+  inputWrap:  { flex: 1, justifyContent: 'center', position: 'relative' },
+  floatLabel: {
+    position: 'absolute',
+    left: 0,
+    fontWeight: '500',
+    zIndex: 1,
+  },
+  input: {
+    fontSize: font.md,
+    paddingVertical: 0,
+    height: 58,
+  },
+  iconLeft:  { marginRight: spacing.sm },
   iconRight: { marginLeft: spacing.sm },
-  error: { fontSize: font.xs, marginTop: 4 },
+  errorTxt:  { fontSize: font.xs, marginTop: 4, marginLeft: 4, fontWeight: '500' },
 });

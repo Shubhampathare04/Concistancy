@@ -25,9 +25,15 @@ export default function LoginScreen() {
     setError(''); setLoading(true);
     try {
       const res = await authApi.login(email.trim().toLowerCase(), password);
-      setAuth({ user: res.data.user, token: res.data.access_token });
+      setAuth({ user: res.data.user, token: res.data.access_token, refresh_token: res.data.refresh_token });
     } catch (e: any) {
-      setError(e?.response?.data?.detail ?? 'Invalid credentials');
+      if (e?.response?.data?.detail) {
+        setError(e.response.data.detail);
+      } else if (e?.code === 'ECONNREFUSED' || e?.message?.includes('Network')) {
+        setError('Cannot reach server. Check your WiFi and API URL.');
+      } else {
+        setError('Connection failed. Make sure the backend is running.');
+      }
     } finally { setLoading(false); }
   };
 
