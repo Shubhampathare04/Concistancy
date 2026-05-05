@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
-from typing import List
+from typing import List, Union
+import json
 
 class Settings(BaseSettings):
     DATABASE_URL: str
@@ -10,12 +11,23 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     REDIS_URL: str = "redis://localhost:6379/0"
     RATE_LIMIT_PER_MINUTE: int = 60
-    RATE_LIMIT_AUTH_PER_MINUTE: int = 10  # stricter for auth endpoints
+    RATE_LIMIT_AUTH_PER_MINUTE: int = 10
     CELERY_BROKER_URL: str = "redis://localhost:6379/1"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/2"
-    CORS_ORIGINS: List[str] = ["*"]
+    CORS_ORIGINS: Union[List[str], str] = "*"
 
     class Config:
         env_file = ".env"
+    
+    @property
+    def cors_origins_list(self) -> List[str]:
+        if isinstance(self.CORS_ORIGINS, str):
+            if self.CORS_ORIGINS == "*":
+                return ["*"]
+            try:
+                return json.loads(self.CORS_ORIGINS)
+            except:
+                return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
+        return self.CORS_ORIGINS
 
 settings = Settings()

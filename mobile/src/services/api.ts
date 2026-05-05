@@ -1,8 +1,18 @@
 import axios, { AxiosError } from 'axios';
+import { Platform } from 'react-native';
 import { useAuthStore } from '@/store/useAuthStore';
 
+const envBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+const envAndroidBaseUrl = process.env.EXPO_PUBLIC_API_URL_ANDROID?.trim();
+const defaultHost = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+const fallbackBaseUrl = `http://${defaultHost}:8000/api/v1`;
+const resolvedBaseUrl =
+  Platform.OS === 'android'
+    ? (envAndroidBaseUrl && envAndroidBaseUrl.length > 0 ? envAndroidBaseUrl : (envBaseUrl && envBaseUrl.length > 0 ? envBaseUrl : fallbackBaseUrl))
+    : (envBaseUrl && envBaseUrl.length > 0 ? envBaseUrl : fallbackBaseUrl);
+
 export const api = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1',
+  baseURL: resolvedBaseUrl,
   timeout: 10000,
 });
 
@@ -48,7 +58,7 @@ api.interceptors.response.use(
 
       try {
         const res = await axios.post(
-          `${process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1'}/auth/refresh`,
+          `${resolvedBaseUrl}/auth/refresh`,
           { refresh_token: refreshToken }
         );
         const newToken = res.data.access_token;

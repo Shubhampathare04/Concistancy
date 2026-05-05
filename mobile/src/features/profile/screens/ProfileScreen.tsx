@@ -199,6 +199,23 @@ export default function ProfileScreen() {
         )}
       >
 
+        {/* ── Identity / North star ── */}
+        <View style={[s.northCard, { backgroundColor: colors.card, borderColor: colors.primaryBorder }]}>
+          <LinearGradient colors={[colors.primary + '20', colors.secondary + '12']} style={StyleSheet.absoluteFill} />
+          <View style={s.northRow}>
+            <View style={[s.northIcon, { backgroundColor: colors.primary + '22' }]}>
+              <Ionicons name="compass-outline" size={22} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[s.northKicker, { color: colors.primary }]}>IDENTITY</Text>
+              <Text style={[s.northTitle, { color: colors.text }]}>You are building proof, not plans.</Text>
+              <Text style={[s.northBody, { color: colors.textMuted }]}>
+                Every mission is a vote for the person you are becoming. Streaks and XP are the receipts.
+              </Text>
+            </View>
+          </View>
+        </View>
+
         {/* ── Stats Grid ── */}
         <View style={s.statsGrid}>
           {[
@@ -486,6 +503,20 @@ const s = StyleSheet.create({
   titleRow: { flexDirection: 'row', gap: 8, marginTop: spacing.md },
   titleBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 16, paddingVertical: 8, borderRadius: radius.full, borderWidth: 1.5, ...shadow.sm },
   titleBadgeTxt: { fontSize: font.sm, fontWeight: '800', letterSpacing: 0.3 },
+
+  northCard: {
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    overflow: 'hidden',
+    ...shadow.sm,
+  },
+  northRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
+  northIcon: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  northKicker: { fontSize: 10, fontWeight: '800', letterSpacing: 1.4, marginBottom: 4 },
+  northTitle: { fontSize: font.lg, fontWeight: '900', letterSpacing: -0.3, marginBottom: 6 },
+  northBody: { fontSize: font.sm, lineHeight: 20, fontWeight: '500' },
 
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
   statCard: { flex: 1, minWidth: (SCREEN_WIDTH - spacing.md * 3) / 2, borderRadius: radius.xl, padding: spacing.lg, borderWidth: 1, alignItems: 'center', gap: 8, overflow: 'hidden', ...shadow.sm },

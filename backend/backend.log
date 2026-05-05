@@ -1,0 +1,17 @@
+INFO:     Will watch for changes in these directories: ['/Users/dineshgaikwad/Desktop/consistency-app/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [99886] using WatchFiles
+INFO:     Started server process [99897]
+INFO:     Waiting for application startup.
+ERROR:    Traceback (most recent call last):
+  File "/Users/dineshgaikwad/Desktop/consistency-app/backend/venv/lib/python3.9/site-packages/starlette/routing.py", line 732, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/contextlib.py", line 175, in __aenter__
+    return await self.gen.__anext__()
+  File "/Users/dineshgaikwad/Desktop/consistency-app/backend/app/main.py", line 17, in lifespan
+    from app.db.mongodb import connect_mongodb, close_mongodb
+  File "/Users/dineshgaikwad/Desktop/consistency-app/backend/app/db/mongodb.py", line 1, in <module>
+    from motor.motor_asyncio import AsyncIOMotorClient
+ModuleNotFoundError: No module named 'motor'
+
+ERROR:    Application startup failed. Exiting.

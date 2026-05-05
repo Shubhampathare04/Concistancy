@@ -1,14 +1,21 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../store/ThemeContext';
+import { useWeeklyTrend } from '../../features/tasks/hooks/useTasks';
+import { buildHeatmapWeeks } from '../../utils/heatmapWeeks';
 import Card from '../Card';
+import WeeklyHeatmap from '../WeeklyHeatmap';
 import { font, spacing, radius, gradients, shadow } from '../../constants/theme';
+
+type DayBar = { label: string; count: number };
 
 export default function ProgressTab({ dashboard, isLoading }: any) {
   const { colors } = useTheme();
+  const { data: trendData } = useWeeklyTrend(12);
+  const heatmapWeeks = useMemo(() => buildHeatmapWeeks(trendData), [trendData]);
 
   if (isLoading) {
     return (
@@ -26,7 +33,7 @@ export default function ProgressTab({ dashboard, isLoading }: any) {
   const xpInLevel = totalXP % nextLevelXP;
   const progress = (xpInLevel / nextLevelXP) * 100;
   
-  const weeklyCompletions = dashboard?.weekly_completions || [
+  const weeklyCompletions: DayBar[] = dashboard?.weekly_completions || [
     { label: 'Mon', count: 3 },
     { label: 'Tue', count: 5 },
     { label: 'Wed', count: 2 },
@@ -46,7 +53,7 @@ export default function ProgressTab({ dashboard, isLoading }: any) {
     { name: 'Legend', target: 50000, current: totalXP, unlocked: totalXP >= 50000, icon: 'diamond', color: colors.purple },
   ];
 
-  const maxCompletions = Math.max(...weeklyCompletions.map(w => w.count), 1);
+  const maxCompletions = Math.max(...weeklyCompletions.map((w: DayBar) => w.count), 1);
 
   return (
     <ScrollView 
@@ -115,7 +122,7 @@ export default function ProgressTab({ dashboard, isLoading }: any) {
         </View>
 
         <View style={styles.chartContainer}>
-          {weeklyCompletions.map((day, index) => {
+          {weeklyCompletions.map((day: DayBar, index: number) => {
             const height = (day.count / maxCompletions) * 100;
             const isToday = index === 6;
             return (
@@ -141,6 +148,19 @@ export default function ProgressTab({ dashboard, isLoading }: any) {
             );
           })}
         </View>
+      </Card>
+
+      <Card padding="lg" shadow="md" gradient={[colors.green + '10', colors.primary + '06']} borderColor={colors.border}>
+        <View style={styles.sectionHeader}>
+          <View style={[styles.sectionIcon, { backgroundColor: colors.primary + '18' }]}>
+            <Ionicons name="git-commit-outline" size={18} color={colors.primary} />
+          </View>
+          <View style={styles.sectionTitleContainer}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Consistency heatmap</Text>
+            <Text style={[styles.sectionSubtitle, { color: colors.textMuted }]}>GitHub-style intensity · recent weeks</Text>
+          </View>
+        </View>
+        <WeeklyHeatmap weeks={heatmapWeeks} />
       </Card>
 
       {/* Milestones */}

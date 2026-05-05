@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useMemo, useState, useEffect } from 'react';
 import { useColorScheme, Appearance } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { darkColors, lightColors, AppColors } from '@/constants/theme';
@@ -56,7 +56,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     mode === 'light'  ? false :
     resolveSystemDark();
 
-  const colors: AppColors = isDark ? darkColors : lightColors;
+  const colors: AppColors = useMemo(() => (isDark ? darkColors : lightColors), [isDark]);
 
   if (!hydrated) return null;
 

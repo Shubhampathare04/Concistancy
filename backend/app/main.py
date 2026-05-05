@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
-from app.api.v1 import auth, tasks, stats, habits, events, social, professionals, subscriptions, ai, mood, admin, groups, verification, admin_panel
+from app.api.v1 import auth, tasks, stats, habits, events, social, professionals, subscriptions, ai, mood, groups, verification
 from app.core.rate_limit import rate_limit_middleware
 from app.core.config import settings
 
@@ -32,9 +32,10 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_origins=settings.cors_origins_list,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.add_middleware(BaseHTTPMiddleware, dispatch=rate_limit_middleware)
@@ -49,10 +50,8 @@ app.include_router(professionals.router, prefix="/api/v1/professionals", tags=["
 app.include_router(subscriptions.router, prefix="/api/v1/subscriptions", tags=["subscriptions"])
 app.include_router(ai.router,            prefix="/api/v1/ai",            tags=["ai"])
 app.include_router(mood.router,          prefix="/api/v1/mood",          tags=["mood"])
-app.include_router(admin.router,         prefix="/api/v1/admin",         tags=["admin"])
 app.include_router(groups.router,        prefix="/api/v1/groups",        tags=["groups"])
 app.include_router(verification.router,  prefix="/api/v1/verification",  tags=["verification"])
-app.include_router(admin_panel.router,   prefix="/api/v1",               tags=["admin-panel"])
 
 
 @app.get("/health")

@@ -15,12 +15,11 @@ import RegisterScreen     from '@/features/auth/screens/RegisterScreen';
 // Onboarding
 import OnboardingScreen   from '@/features/onboarding/screens/OnboardingScreen';
 
-// Core tabs
-import HomeScreen         from '@/features/tasks/screens/HomeScreen';
-import CreateTaskScreen   from '@/features/tasks/screens/CreateTaskScreen';
-import InsightsScreen     from '@/features/streaks/screens/InsightsScreen';
-import CommunityScreen    from '@/features/social/screens/CommunityScreen';
-import ProfileScreen      from '@/features/profile/screens/ProfileScreen';
+// Core tabs (hard reset UI)
+import { TodayScreen } from '@/screens/TodayScreen';
+import { CreateScreen } from '@/screens/CreateScreen';
+import { ProgressScreen } from '@/screens/ProgressScreen';
+import { ProfileScreenV2 } from '@/screens/ProfileScreenV2';
 
 // Feature screens
 import FocusModeScreen    from '@/features/tasks/screens/FocusModeScreen';
@@ -68,8 +67,8 @@ function MainTabs() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: isDark ? 'rgba(18,18,18,0.98)' : 'rgba(255,255,255,0.98)',
-          borderTopColor: colors.border,
+          backgroundColor: isDark ? 'rgba(14,15,20,0.98)' : 'rgba(255,255,255,0.98)',
+          borderTopColor: colors.strokeSubtle,
           borderTopWidth: 0.5,
           height: Platform.OS === 'ios' ? 88 : 72,
           paddingBottom: Platform.OS === 'ios' ? 24 : 12,
@@ -82,30 +81,27 @@ function MainTabs() {
           shadowRadius: 12,
         },
         tabBarActiveTintColor:   colors.primary,
-        tabBarInactiveTintColor: colors.textDim,
+        tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginTop: 2 },
       }}
       screenListeners={{
         tabPress: handleTabPress,
       }}
     >
-      <Tab.Screen name="Home" component={HomeScreen}
-        options={{ tabBarLabel: 'Home', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'home' : 'home-outline'} size={23} color={color} /> }}
+      <Tab.Screen name="Today" component={TodayScreen}
+        options={{ tabBarLabel: 'Today', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'sparkles' : 'sparkles-outline'} size={23} color={color} /> }}
       />
-      <Tab.Screen name="Insights" component={InsightsScreen}
-        options={{ tabBarLabel: 'Insights', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'bar-chart' : 'bar-chart-outline'} size={23} color={color} /> }}
+      <Tab.Screen name="Progress" component={ProgressScreen}
+        options={{ tabBarLabel: 'Progress', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'bar-chart' : 'bar-chart-outline'} size={23} color={color} /> }}
       />
-      <Tab.Screen name="CreateTask" component={CreateTaskScreen}
+      <Tab.Screen name="Create" component={CreateScreen}
         options={({ navigation }) => ({
           tabBarLabel: '',
           tabBarIcon: () => null,
-          tabBarButton: () => <AddTabButton onPress={() => navigation.navigate('CreateTask')} />,
+          tabBarButton: () => <AddTabButton onPress={() => navigation.navigate('Create')} />,
         })}
       />
-      <Tab.Screen name="Community" component={CommunityScreen}
-        options={{ tabBarLabel: 'Community', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'people' : 'people-outline'} size={23} color={color} /> }}
-      />
-      <Tab.Screen name="Profile" component={ProfileScreen}
+      <Tab.Screen name="Profile" component={ProfileScreenV2}
         options={{ tabBarLabel: 'Profile', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'person' : 'person-outline'} size={23} color={color} /> }}
       />
     </Tab.Navigator>
@@ -155,9 +151,9 @@ export default function RootNavigator() {
     ...(isDark ? DarkTheme : DefaultTheme),
     colors: {
       ...(isDark ? DarkTheme : DefaultTheme).colors,
-      background: colors.bg,
-      card:       colors.surface,
-      border:     colors.border,
+      background: colors.bg0,
+      card:       colors.bg1,
+      border:     colors.strokeSubtle,
       text:       colors.text,
       primary:    colors.primary,
     },

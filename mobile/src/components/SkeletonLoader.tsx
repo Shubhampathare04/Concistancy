@@ -1,80 +1,60 @@
-import { useEffect, useRef } from 'react';
-import { Animated, View, StyleSheet, ViewStyle } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { useEffect } from 'react';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 import { useTheme } from '@/store/ThemeContext';
-import { radius } from '@/constants/theme';
+import { radius, spacing } from '@/constants/theme';
 
-interface Props {
-  width?: number | string;
-  height?: number;
-  borderRadius?: number;
-  style?: ViewStyle;
+function Shimmer({ width, height, rounded = radius.md }: { width: number; height: number; rounded?: number }) {
+  const { colors } = useTheme();
+  const p = useSharedValue(0);
+  useEffect(() => {
+    p.value = withRepeat(withTiming(1, { duration: 1100 }), -1, false);
+  }, [p]);
+  const style = useAnimatedStyle(() => ({
+    opacity: interpolate(p.value, [0, 0.5, 1], [0.28, 0.55, 0.28], Extrapolation.CLAMP),
+  }));
+  return (
+    <Animated.View style={style}>
+      <View style={{ width, height, borderRadius: rounded, backgroundColor: colors.strokeSubtle }} />
+    </Animated.View>
+  );
 }
 
-export function SkeletonBox({ width = '100%', height = 20, borderRadius = radius.sm, style }: Props) {
-  const { colors } = useTheme();
-  const shimmer = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmer, { toValue: 1, duration: 900, useNativeDriver: false }),
-        Animated.timing(shimmer, { toValue: 0, duration: 900, useNativeDriver: false }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, []);
-
-  const bg = shimmer.interpolate({
-    inputRange: [0, 1],
-    outputRange: [colors.surface, colors.card],
-  });
-
+export function TodaySkeleton() {
   return (
-    <Animated.View
-      style={[{ width: width as any, height, borderRadius, backgroundColor: bg }, style]}
-    />
+    <View style={s.wrap}>
+      <Shimmer width={220} height={22} />
+      <Shimmer width={320} height={150} rounded={radius.xl} />
+      <Shimmer width={120} height={14} />
+      <Shimmer width={320} height={96} rounded={radius.lg} />
+      <Shimmer width={320} height={96} rounded={radius.lg} />
+      <Shimmer width={320} height={96} rounded={radius.lg} />
+    </View>
+  );
+}
+
+// Legacy exports for older screens still in repo.
+export function HomeHeaderSkeleton() {
+  return (
+    <View style={s.wrap}>
+      <Shimmer width={200} height={28} />
+      <Shimmer width={320} height={130} rounded={radius.xl} />
+    </View>
   );
 }
 
 export function TaskCardSkeleton() {
-  const { colors } = useTheme();
-  return (
-    <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <View style={[s.bar, { backgroundColor: colors.border }]} />
-      <View style={s.body}>
-        <SkeletonBox width="70%" height={16} style={{ marginBottom: 8 }} />
-        <SkeletonBox width="40%" height={12} />
-      </View>
-      <SkeletonBox width={42} height={42} borderRadius={10} style={{ marginRight: 16 }} />
-    </View>
-  );
-}
-
-export function HomeHeaderSkeleton() {
-  return (
-    <View style={{ gap: 12, paddingHorizontal: 20, paddingTop: 16 }}>
-      <SkeletonBox width="50%" height={28} borderRadius={8} />
-      <SkeletonBox width="100%" height={100} borderRadius={20} />
-      <SkeletonBox width="100%" height={8} borderRadius={4} />
-      <View style={{ flexDirection: 'row', gap: 8 }}>
-        <SkeletonBox height={80} style={{ flex: 1 }} borderRadius={14} />
-        <SkeletonBox height={80} style={{ flex: 1 }} borderRadius={14} />
-        <SkeletonBox height={80} style={{ flex: 1 }} borderRadius={14} />
-      </View>
-    </View>
-  );
+  return <Shimmer width={320} height={96} rounded={radius.lg} />;
 }
 
 const s = StyleSheet.create({
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 14,
-    marginBottom: 8,
-    overflow: 'hidden',
-    borderWidth: 1,
-  },
-  bar: { width: 4, alignSelf: 'stretch' },
-  body: { flex: 1, padding: 16 },
+  wrap: { gap: spacing[3], paddingTop: spacing[6], paddingHorizontal: spacing[5] },
 });
+
