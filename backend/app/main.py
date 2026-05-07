@@ -2,13 +2,17 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
-from app.api.v1 import auth, tasks, stats, habits, events, social, professionals, subscriptions, ai, mood, groups, verification
+from app.api.v1 import auth, tasks, stats, habits, events, social, professionals, subscriptions, ai, mood, groups, verification, notifications
 from app.core.rate_limit import rate_limit_middleware
 from app.core.config import settings
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Initialize Sentry error tracking
+    from app.core.sentry import init_sentry
+    init_sentry()
+    
     # Tables are managed by Alembic migrations — run `alembic upgrade head` before starting
     # Register community event handlers
     import app.services.community_events  # noqa: F401
@@ -52,6 +56,7 @@ app.include_router(ai.router,            prefix="/api/v1/ai",            tags=["
 app.include_router(mood.router,          prefix="/api/v1/mood",          tags=["mood"])
 app.include_router(groups.router,        prefix="/api/v1/groups",        tags=["groups"])
 app.include_router(verification.router,  prefix="/api/v1/verification",  tags=["verification"])
+app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["notifications"])
 
 
 @app.get("/health")

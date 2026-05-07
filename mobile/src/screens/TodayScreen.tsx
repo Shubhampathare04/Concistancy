@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
-import { RefreshControl, SectionList, StyleSheet, View } from 'react-native';
-import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
+import { RefreshControl, SectionList, StyleSheet, View, TouchableOpacity, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useDashboard, useCompleteTask } from '@/features/tasks/hooks/useTasks';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useSessionUIStore } from '@/store/useSessionUIStore';
@@ -12,15 +12,10 @@ import { spacing } from '@/constants/theme';
 import { CText } from '@/components/primitives/CText';
 import { Surface } from '@/components/primitives/Surface';
 import { TaskCard } from '@/components/TaskCard';
-import { FloatingActionButton } from '@/components/FloatingActionButton';
-import { CircularProgressRing } from '@/components/progress/CircularProgressRing';
-import { XPProgressBar } from '@/components/progress/XPProgressBar';
-import { haptics } from '@/hooks/useHaptics';
+import { StaticProgressRing } from '@/components/StaticProgressRing';
+import { StaticXPBar } from '@/components/StaticXPBar';
+import { SimpleToast } from '@/components/SimpleToast';
 import type { Task } from '@/features/tasks/types';
-import { XPBurst } from '@/components/feedback/XPBurst';
-import { TodaySkeleton } from '@/components/SkeletonLoader';
-
-const AnimatedSectionList = Animated.createAnimatedComponent(SectionList<Task>);
 
 function greeting() {
   const h = new Date().getHours();
@@ -40,7 +35,7 @@ function tierName(difficulty: number) {
 
 export function TodayScreen() {
   const nav = useNavigation<any>();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const user = useAuthStore((s) => s.user);
   const { data, isLoading, refetch } = useDashboard();
   const { mutate: complete, isPending, variables } = useCompleteTask();
@@ -48,13 +43,7 @@ export function TodayScreen() {
   const isSkippedToday = useSessionUIStore((s) => s.isSkippedToday);
 
   const [refreshing, setRefreshing] = useState(false);
-  const [burst, setBurst] = useState<{ xp: number; token: number } | null>(null);
-  const scrollY = useSharedValue(0);
-  const onScroll = useAnimatedScrollHandler({
-    onScroll: (e) => {
-      scrollY.value = e.contentOffset.y;
-    },
-  });
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const streak = data?.streak ?? 0;
   const level = data?.level ?? 1;
@@ -80,7 +69,6 @@ export function TodayScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    haptics.light();
     await refetch();
     setRefreshing(false);
   };
@@ -92,7 +80,10 @@ export function TodayScreen() {
       { taskId },
       {
         onSuccess: (res) => {
-          setBurst({ xp: res?.xp_gained > 0 ? res.xp_gained : xp, token: Date.now() });
+          setToast({ message: `+${res?.xp_gained || xp} XP earned!`, type: 'success' });
+        },
+        onError: () => {
+          setToast({ message: 'Failed to complete task', type: 'error' });
         },
       }
     );
@@ -100,30 +91,33 @@ export function TodayScreen() {
 
   const handleSkip = (taskId: number) => {
     skipTaskForToday(taskId);
+    setToast({ message: 'Task skipped for today', type: 'info' });
   };
 
   if (isLoading && !data) {
     return (
       <View style={[s.container, { backgroundColor: colors.bg0 }]}>
-        <TodaySkeleton />
+        <View style={s.loading}>
+          <Text style={{ color: colors.text, fontSize: 16 }}>Loading your missions...</Text>
+        </View>
       </View>
     );
   }
 
   return (
     <View style={[s.container, { backgroundColor: colors.bg0 }]}>
-      {burst ? <XPBurst xp={burst.xp} token={burst.token} onDone={() => setBurst(null)} /> : null}
-      <AnimatedSectionList
+      {toast && <SimpleToast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
+      
+      <SectionList
         sections={sections}
         keyExtractor={(item) => String(item.id)}
         stickySectionHeadersEnabled={false}
-        onScroll={onScroll}
-        scrollEventThrottle={16}
         contentContainerStyle={s.list}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         ListHeaderComponent={
           <View style={{ paddingTop: spacing[6], gap: spacing[4] }}>
+            {/* Header */}
             <View style={s.headerRow}>
               <View style={{ flex: 1 }}>
                 <CText variant="sectionLabel" tone="muted">{greeting()}</CText>
@@ -132,11 +126,15 @@ export function TodayScreen() {
                   Show up once. The streak does the rest.
                 </CText>
               </View>
-              <Surface layer="bg1" rounded="pill" border style={s.searchBtn}>
+              <TouchableOpacity
+                style={[s.searchBtn, { backgroundColor: colors.bg1, borderColor: colors.strokeSubtle }]}
+                onPress={() => nav.navigate('Search')}
+              >
                 <Ionicons name="search" size={18} color={colors.textSub} />
-              </Surface>
+              </TouchableOpacity>
             </View>
 
+            {/* Stats Card */}
             <Surface layer="bg1" rounded="xl" border style={s.hero}>
               <LinearGradient colors={[colors.primaryWash, 'transparent']} style={StyleSheet.absoluteFill} />
               <View style={s.heroTop}>
@@ -145,8 +143,8 @@ export function TodayScreen() {
                   <CText variant="heroNumber">{streak}</CText>
                   <CText variant="caption" tone="sub">{completedToday} wins today</CText>
                 </View>
-                <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                  <CircularProgressRing size={110} strokeWidth={10} progress={dayProgress} />
+                <View style={{ position: 'relative', alignItems: 'center', justifyContent: 'center' }}>
+                  <StaticProgressRing size={110} strokeWidth={10} progress={dayProgress} />
                   <View style={s.ringCenter}>
                     <CText variant="micro" tone="muted">Today</CText>
                     <CText variant="title">{Math.round(dayProgress * 100)}%</CText>
@@ -154,13 +152,74 @@ export function TodayScreen() {
                 </View>
               </View>
               <View style={{ marginTop: spacing[4] }}>
-                <XPProgressBar level={level} xpInLevel={xpInLevel} xpToNext={xpToNext} />
+                <StaticXPBar level={level} xpInLevel={xpInLevel} xpToNext={xpToNext} />
               </View>
             </Surface>
 
+            {/* Quick Actions */}
+            <View style={s.quickActions}>
+              <TouchableOpacity
+                style={[s.actionBtn, { backgroundColor: colors.bg1, borderColor: colors.strokeSubtle }]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                  nav.navigate('Progress');
+                }}
+              >
+                <Ionicons name="bar-chart" size={20} color={colors.primary} />
+                <CText variant="caption" tone="primary">Stats</CText>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[s.actionBtn, { backgroundColor: colors.bg1, borderColor: colors.strokeSubtle }]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                  nav.navigate('Social');
+                }}
+              >
+                <Ionicons name="people" size={20} color={colors.primary} />
+                <CText variant="caption" tone="primary">Friends</CText>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[s.actionBtn, { backgroundColor: colors.bg1, borderColor: colors.strokeSubtle }]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                  nav.navigate('Profile');
+                }}
+              >
+                <Ionicons name="person" size={20} color={colors.primary} />
+                <CText variant="caption" tone="primary">Profile</CText>
+              </TouchableOpacity>
+            </View>
+
+            {/* AI Insights */}
+            {data?.insights && data.insights.length > 0 && (
+              <Surface layer="bg1" rounded="xl" border style={s.insightCard}>
+                <View style={s.insightHeader}>
+                  <Ionicons name="bulb" size={20} color={colors.yellow} />
+                  <CText variant="sectionLabel" tone="muted">AI Insight</CText>
+                </View>
+                <CText variant="body" style={{ marginTop: spacing[2] }}>
+                  {data.insights[0].message}
+                </CText>
+                {data.insights[0].action_label && (
+                  <TouchableOpacity
+                    style={[s.insightAction, { backgroundColor: colors.primaryWash }]}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                    }}
+                  >
+                    <CText variant="caption" tone="primary">{data.insights[0].action_label}</CText>
+                    <Ionicons name="arrow-forward" size={14} color={colors.primary} />
+                  </TouchableOpacity>
+                )}
+              </Surface>
+            )}
+
+            {/* Section Header */}
             <View style={{ gap: spacing[1] }}>
-              <CText variant="sectionLabel" tone="muted">Today’s missions</CText>
-              <CText variant="caption" tone="sub">Swipe right to claim XP. Swipe left for “later”.</CText>
+              <CText variant="sectionLabel" tone="muted">Today's missions</CText>
+              <CText variant="caption" tone="sub">Tap buttons to complete or skip tasks.</CText>
             </View>
           </View>
         }
@@ -180,28 +239,40 @@ export function TodayScreen() {
         ListEmptyComponent={
           <Surface layer="bg1" rounded="xl" border style={[s.empty, { marginTop: spacing[6] }]}>
             <LinearGradient colors={['rgba(124,92,255,0.18)', 'transparent']} style={StyleSheet.absoluteFill} />
-            <Ionicons name="sparkles" size={22} color={colors.primary2} />
+            <Ionicons name="sparkles" size={32} color={colors.primary2} />
             <CText variant="title">All clear.</CText>
             <CText variant="caption" tone="sub" style={{ textAlign: 'center' }}>
               Add one tiny mission — momentum loves a first rep.
             </CText>
+            <TouchableOpacity
+              style={[s.emptyBtn, { backgroundColor: colors.primary }]}
+              onPress={() => nav.navigate('Create')}
+            >
+              <Ionicons name="add" size={20} color="#fff" />
+              <Text style={s.emptyBtnText}>Create Task</Text>
+            </TouchableOpacity>
           </Surface>
         }
       />
-
-      <FloatingActionButton onPress={() => nav.navigate('Create')} />
     </View>
   );
 }
 
 const s = StyleSheet.create({
   container: { flex: 1 },
+  loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   list: { paddingHorizontal: spacing[5], paddingBottom: spacing[20] },
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing[3] },
-  searchBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  searchBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22, borderWidth: 1 },
   hero: { padding: spacing[5], overflow: 'hidden' },
   heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing[4] },
   ringCenter: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
-  empty: { padding: spacing[6], alignItems: 'center', gap: spacing[2], overflow: 'hidden' },
+  quickActions: { flexDirection: 'row', gap: spacing[3] },
+  actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing[2], paddingVertical: spacing[3], borderRadius: 12, borderWidth: 1 },
+  insightCard: { padding: spacing[4] },
+  insightHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing[2] },
+  insightAction: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing[2], paddingVertical: spacing[2], paddingHorizontal: spacing[3], borderRadius: 8, marginTop: spacing[3], alignSelf: 'flex-start' },
+  empty: { padding: spacing[6], alignItems: 'center', gap: spacing[3], overflow: 'hidden' },
+  emptyBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 999, marginTop: spacing[2] },
+  emptyBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 });
-

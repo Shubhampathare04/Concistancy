@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from typing import List, Optional
 from datetime import datetime, timedelta, date
+import json
 from app.db.session import get_db
 from app.schemas.schemas import (
     DashboardOut, ConsistencyReport, BehaviorScoreOut,
@@ -25,13 +26,33 @@ from app.models.models import (
 )
 from app.utils.deps import get_current_user
 from app.core.config import settings
+from app.core.cache import cache_get, cache_set, cache_delete_pattern
 
 router = APIRouter()
 
 
 @router.get("/dashboard", response_model=DashboardOut)
 def dashboard(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return task_service.get_dashboard(user.id, db)
+    cache_key = f"dashboard:{user.id}"
+    
+    # Try to get from cache
+    cached = cache_get(cache_key)
+    if cached:
+        try:
+            return DashboardOut(**json.loads(cached))
+        except Exception:
+            pass
+    
+    # Get fresh data
+    result = task_service.get_dashboard(user.id, db)
+    
+    # Cache for 2 minutes
+    try:
+        cache_set(cache_key, json.dumps(result.model_dump()), ttl=120)
+    except Exception:
+        pass
+    
+    return result
 
 
 @router.get("/consistency", response_model=ConsistencyReport)

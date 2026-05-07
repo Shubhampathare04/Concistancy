@@ -5,30 +5,28 @@ import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
+import { forwardRef } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useTheme } from '@/store/ThemeContext';
 
 // Auth
 import LoginScreen        from '@/features/auth/screens/LoginScreen';
 import RegisterScreen     from '@/features/auth/screens/RegisterScreen';
+import ConnectionTest     from '@/screens/ConnectionTest';
 
 // Onboarding
 import OnboardingScreen   from '@/features/onboarding/screens/OnboardingScreen';
 
-// Core tabs (hard reset UI)
+// Core tabs
 import { TodayScreen } from '@/screens/TodayScreen';
 import { CreateScreen } from '@/screens/CreateScreen';
 import { ProgressScreen } from '@/screens/ProgressScreen';
+import { SocialScreen } from '@/screens/SocialScreen';
 import { ProfileScreenV2 } from '@/screens/ProfileScreenV2';
 
 // Feature screens
 import FocusModeScreen    from '@/features/tasks/screens/FocusModeScreen';
 import SearchScreen       from '@/features/tasks/screens/SearchScreen';
-import HabitsScreen       from '@/features/habits/screens/HabitsScreen';
-import EventsScreen       from '@/features/events/screens/EventsScreen';
-import SocialScreen       from '@/features/social/screens/SocialScreen';
-import ProfessionalsScreen from '@/features/professionals/screens/ProfessionalsScreen';
-import SubscriptionScreen from '@/features/subscription/screens/SubscriptionScreen';
 import GroupDetailScreen  from '@/features/social/screens/GroupDetailScreen';
 import CreateGroupScreen  from '@/features/social/screens/CreateGroupScreen';
 import CreateGroupChallengeScreen from '@/features/social/screens/CreateGroupChallengeScreen';
@@ -101,6 +99,9 @@ function MainTabs() {
           tabBarButton: () => <AddTabButton onPress={() => navigation.navigate('Create')} />,
         })}
       />
+      <Tab.Screen name="Social" component={SocialScreen}
+        options={{ tabBarLabel: 'Social', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'people' : 'people-outline'} size={23} color={color} /> }}
+      />
       <Tab.Screen name="Profile" component={ProfileScreenV2}
         options={{ tabBarLabel: 'Profile', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'person' : 'person-outline'} size={23} color={color} /> }}
       />
@@ -121,11 +122,6 @@ function MainStack() {
       <Stack.Screen name="Tabs"          component={MainTabs} />
       <Stack.Screen name="FocusMode"     component={FocusModeScreen} options={{ animation: 'fade', presentation: 'fullScreenModal' }} />
       <Stack.Screen name="Search"        component={SearchScreen} options={{ animation: 'fade_from_bottom', presentation: 'modal' }} />
-      <Stack.Screen name="Habits"        component={HabitsScreen} />
-      <Stack.Screen name="Events"        component={EventsScreen} />
-      <Stack.Screen name="Social"        component={SocialScreen} />
-      <Stack.Screen name="Professionals" component={ProfessionalsScreen} />
-      <Stack.Screen name="Subscription"  component={SubscriptionScreen} />
       <Stack.Screen name="GroupDetail"   component={GroupDetailScreen} />
       <Stack.Screen name="CreateGroup"   component={CreateGroupScreen} options={{ animation: 'slide_from_bottom', presentation: 'modal' }} />
       <Stack.Screen name="CreateGroupChallenge" component={CreateGroupChallengeScreen} options={{ animation: 'slide_from_bottom', presentation: 'modal' }} />
@@ -136,13 +132,14 @@ function MainStack() {
 function AuthStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade_from_bottom' }}>
+      <Stack.Screen name="ConnectionTest" component={ConnectionTest} />
       <Stack.Screen name="Login"    component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
     </Stack.Navigator>
   );
 }
 
-export default function RootNavigator() {
+const RootNavigator = forwardRef((props, ref) => {
   const token      = useAuthStore((s) => s.token);
   const user       = useAuthStore((s) => s.user) as any;
   const { colors, isDark } = useTheme();
@@ -162,7 +159,7 @@ export default function RootNavigator() {
   const showOnboarding = token && user && user.is_onboarded === false;
 
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer theme={navTheme} ref={ref}>
       {!token
         ? <AuthStack />
         : showOnboarding
@@ -175,7 +172,9 @@ export default function RootNavigator() {
       }
     </NavigationContainer>
   );
-}
+});
+
+export default RootNavigator;
 
 const s = StyleSheet.create({
   addWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },

@@ -1,17 +1,6 @@
 import { ReactNode } from 'react';
-import { Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  runOnJS,
-} from 'react-native-reanimated';
+import { Text, StyleSheet, ViewStyle, TextStyle, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
-
-function lightHaptic() {
-  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-}
 
 type Variant = 'primary' | 'secondary' | 'ghost';
 
@@ -34,24 +23,10 @@ export default function AnimatedButton({
   style,
   labelStyle,
 }: Props) {
-  const scale = useSharedValue(1);
-
-  const tap = Gesture.Tap()
-    .enabled(!disabled)
-    .onBegin(() => {
-      scale.value = withSpring(0.96, { damping: 15, stiffness: 400 });
-      runOnJS(lightHaptic)();
-    })
-    .onFinalize(() => {
-      scale.value = withSpring(1, { damping: 12, stiffness: 220 });
-    })
-    .onEnd(() => {
-      runOnJS(onPress)();
-    });
-
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
+  const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    onPress();
+  };
 
   const palette =
     variant === 'primary'
@@ -61,20 +36,20 @@ export default function AnimatedButton({
         : { bg: 'transparent', fg: '#a0a0a0', border: 'rgba(255,255,255,0.08)' };
 
   return (
-    <GestureDetector gesture={tap}>
-      <Animated.View
-        style={[
-          s.btn,
-          { backgroundColor: palette.bg, borderColor: palette.border },
-          disabled && s.disabled,
-          animStyle,
-          style,
-        ]}
-      >
-        {icon}
-        <Text style={[s.txt, { color: palette.fg }, labelStyle]}>{label}</Text>
-      </Animated.View>
-    </GestureDetector>
+    <TouchableOpacity
+      onPress={handlePress}
+      disabled={disabled}
+      activeOpacity={0.7}
+      style={[
+        s.btn,
+        { backgroundColor: palette.bg, borderColor: palette.border },
+        disabled && s.disabled,
+        style,
+      ]}
+    >
+      {icon}
+      <Text style={[s.txt, { color: palette.fg }, labelStyle]}>{label}</Text>
+    </TouchableOpacity>
   );
 }
 

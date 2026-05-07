@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
@@ -8,10 +8,7 @@ import { useCreateTask } from '@/features/tasks/hooks/useTasks';
 import { useAISuggest } from '@/hooks/useAISuggest';
 import { CText } from '@/components/primitives/CText';
 import { Surface } from '@/components/primitives/Surface';
-import { AnimatedPressable } from '@/components/primitives/AnimatedPressable';
 import { radius, shadow, spacing } from '@/constants/theme';
-import { haptics } from '@/hooks/useHaptics';
-import { BottomSheet } from '@/components/BottomSheet';
 
 const DIFF = [
   { v: 1, label: 'Tiny', hint: '2–5 min', icon: 'leaf', tint: '#2EE59D' },
@@ -50,7 +47,6 @@ export function CreateScreen() {
   const commit = () => {
     if (!title.trim()) {
       setError('Name the mission.');
-      haptics.warning();
       inputRef.current?.focus();
       return;
     }
@@ -65,11 +61,9 @@ export function CreateScreen() {
       },
       {
         onSuccess: () => {
-          haptics.success();
           nav.navigate('Today');
         },
         onError: () => {
-          haptics.error();
           setError('Could not create. Check connection.');
         },
       }
@@ -114,10 +108,10 @@ export function CreateScreen() {
                 </View>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
                   {suggestions.map((sugg: string, idx: number) => (
-                    <AnimatedPressable
+                    <TouchableOpacity
                       key={idx}
                       onPress={() => {
-                        haptics.select();
+                        null;
                         setTitle(sugg);
                       }}
                       style={[s.sugg, { borderColor: colors.strokeSubtle, backgroundColor: colors.bg2 }]}
@@ -125,7 +119,7 @@ export function CreateScreen() {
                       <CText variant="caption" tone="sub" numberOfLines={2} style={{ maxWidth: 220 }}>
                         {sugg}
                       </CText>
-                    </AnimatedPressable>
+                    </TouchableOpacity>
                   ))}
                 </ScrollView>
               </View>
@@ -138,10 +132,10 @@ export function CreateScreen() {
               {CATS.map((c) => {
                 const on = c.id === category;
                 return (
-                  <AnimatedPressable
+                  <TouchableOpacity
                     key={c.id}
                     onPress={() => {
-                      haptics.select();
+                      null;
                       setCategory(c.id);
                     }}
                     style={[
@@ -151,7 +145,7 @@ export function CreateScreen() {
                   >
                     <Ionicons name={`${c.icon}-outline` as any} size={16} color={on ? colors.primary : colors.textMuted} />
                     <CText variant="micro" tone={on ? 'primary' : 'sub'}>{c.label}</CText>
-                  </AnimatedPressable>
+                  </TouchableOpacity>
                 );
               })}
             </ScrollView>
@@ -163,10 +157,10 @@ export function CreateScreen() {
               {DIFF.map((d) => {
                 const on = d.v === difficulty;
                 return (
-                  <AnimatedPressable
+                  <TouchableOpacity
                     key={d.v}
                     onPress={() => {
-                      haptics.light();
+                      null;
                       setDifficulty(d.v);
                       setMinutes(d.v <= 2 ? 10 : d.v === 3 ? 25 : d.v === 4 ? 45 : 60);
                     }}
@@ -183,20 +177,20 @@ export function CreateScreen() {
                       <CText variant="micro" tone={on ? 'primary' : 'sub'}>{d.label}</CText>
                     </View>
                     <CText variant="micro" tone="muted">{d.hint}</CText>
-                  </AnimatedPressable>
+                  </TouchableOpacity>
                 );
               })}
             </View>
-            <AnimatedPressable
+            <TouchableOpacity
               onPress={() => {
-                haptics.select();
+                null;
                 setSheetOpen(true);
               }}
               style={[s.advancedBtn, { borderColor: colors.strokeSubtle, backgroundColor: colors.bg2 }]}
             >
               <Ionicons name="options-outline" size={16} color={colors.textSub} />
               <CText variant="micro" tone="sub">{`Advanced setup · ${minutes}m · ${schedule}`}</CText>
-            </AnimatedPressable>
+            </TouchableOpacity>
           </Surface>
 
           <Surface layer="bg1" rounded="xl" border style={s.block}>
@@ -218,7 +212,7 @@ export function CreateScreen() {
             </Surface>
           ) : null}
 
-          <AnimatedPressable
+          <TouchableOpacity
             onPress={commit}
             disabled={isPending}
             style={[
@@ -232,69 +226,9 @@ export function CreateScreen() {
             <CText variant="body" style={{ color: colors.white }}>
               {isPending ? 'Locking in…' : 'Commit mission'}
             </CText>
-          </AnimatedPressable>
+          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
-      <BottomSheet visible={sheetOpen} onClose={() => setSheetOpen(false)}>
-        <View style={{ gap: spacing[4] }}>
-          <View>
-            <CText variant="sectionLabel" tone="muted">Time box</CText>
-            <View style={s.sheetRow}>
-              {[10, 15, 25, 45, 60].map((m) => {
-                const on = m === minutes;
-                return (
-                  <AnimatedPressable
-                    key={m}
-                    onPress={() => {
-                      haptics.select();
-                      setMinutes(m);
-                    }}
-                    style={[
-                      s.sheetChip,
-                      { borderColor: on ? colors.primary : colors.strokeSubtle, backgroundColor: on ? colors.primaryWash : colors.bg2 },
-                    ]}
-                  >
-                    <CText variant="micro" tone={on ? 'primary' : 'sub'}>{`${m}m`}</CText>
-                  </AnimatedPressable>
-                );
-              })}
-            </View>
-          </View>
-          <View>
-            <CText variant="sectionLabel" tone="muted">Cadence</CText>
-            <View style={s.sheetRow}>
-              {[
-                { id: 'daily', label: 'Daily' },
-                { id: 'weekly', label: 'Weekly' },
-                { id: 'one_time', label: 'Once' },
-              ].map((c) => {
-                const on = c.id === schedule;
-                return (
-                  <AnimatedPressable
-                    key={c.id}
-                    onPress={() => {
-                      haptics.select();
-                      setSchedule(c.id as any);
-                    }}
-                    style={[
-                      s.sheetChip,
-                      { borderColor: on ? colors.primary : colors.strokeSubtle, backgroundColor: on ? colors.primaryWash : colors.bg2 },
-                    ]}
-                  >
-                    <CText variant="micro" tone={on ? 'primary' : 'sub'}>{c.label}</CText>
-                  </AnimatedPressable>
-                );
-              })}
-            </View>
-          </View>
-          <AnimatedPressable
-            onPress={() => setSheetOpen(false)}
-            style={[s.done, { backgroundColor: colors.primary }]}
-          >
-            <CText variant="body" style={{ color: colors.white }}>Done</CText>
-          </AnimatedPressable>
-        </View>
-      </BottomSheet>
     </View>
   );
 }

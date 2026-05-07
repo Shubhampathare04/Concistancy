@@ -1,18 +1,16 @@
 import axios, { AxiosError } from 'axios';
-import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { useAuthStore } from '@/store/useAuthStore';
 
-const envBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
-const envAndroidBaseUrl = process.env.EXPO_PUBLIC_API_URL_ANDROID?.trim();
-const defaultHost = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
-const fallbackBaseUrl = `http://${defaultHost}:8000/api/v1`;
-const resolvedBaseUrl =
-  Platform.OS === 'android'
-    ? (envAndroidBaseUrl && envAndroidBaseUrl.length > 0 ? envAndroidBaseUrl : (envBaseUrl && envBaseUrl.length > 0 ? envBaseUrl : fallbackBaseUrl))
-    : (envBaseUrl && envBaseUrl.length > 0 ? envBaseUrl : fallbackBaseUrl);
+const debuggerHost = Constants.expoConfig?.hostUri?.split(':').shift();
+const API_URL = debuggerHost 
+  ? `http://${debuggerHost}:8000/api/v1`
+  : process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.5:8000/api/v1';
+
+console.log('🌐 API URL:', API_URL);
 
 export const api = axios.create({
-  baseURL: resolvedBaseUrl,
+  baseURL: API_URL,
   timeout: 10000,
 });
 
@@ -58,7 +56,7 @@ api.interceptors.response.use(
 
       try {
         const res = await axios.post(
-          `${resolvedBaseUrl}/auth/refresh`,
+          `${API_URL}/auth/refresh`,
           { refresh_token: refreshToken }
         );
         const newToken = res.data.access_token;

@@ -6,7 +6,6 @@ config.server = {
   ...config.server,
   enhanceMiddleware: (middleware) => {
     return (req, res, next) => {
-      // Force Metro to use LAN IP
       const originalWriteHead = res.writeHead;
       res.writeHead = function(...args) {
         res.setHeader('Access-Control-Allow-Origin', '*');

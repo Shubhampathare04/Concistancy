@@ -230,6 +230,26 @@ def complete_task(
         "new_badge_keys":    list(new_badge_keys),
         "db":                db,  # analytics handler writes ActivityLog inline
     })
+    
+    # Send push notifications for milestones
+    import asyncio
+    from app.services.push_notification_service import push_service, NotificationTemplates
+    
+    if level_up:
+        asyncio.create_task(
+            push_service.send_notification(
+                user_id,
+                *NotificationTemplates.level_up(stats.level)
+            )
+        )
+    
+    if streak.current_streak in [7, 14, 30, 60, 100]:
+        asyncio.create_task(
+            push_service.send_notification(
+                user_id,
+                *NotificationTemplates.streak_milestone(streak.current_streak)
+            )
+        )
 
     db.commit()
     cache_delete_pattern(f"dashboard:{user_id}:*")

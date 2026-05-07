@@ -127,7 +127,7 @@ export default function OverviewTab({ dashboard, isLoading }: any) {
           </LinearGradient>
           <View style={styles.ciInfo}>
             <Text style={[styles.ciLabel, { color: colors.text }]}>
-              {ci >= 80 ? '🔥 Outstanding!' : ci >= 50 ? '💪 Good Progress' : '📈 Keep Building'}
+              {ci >= 80 ? 'Outstanding!' : ci >= 50 ? 'Good Progress' : 'Keep Building'}
             </Text>
             <Text style={[styles.ciDescription, { color: colors.textMuted }]}>
               {ci >= 80 
